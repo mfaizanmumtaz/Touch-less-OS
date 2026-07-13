@@ -1,2 +1,6 @@
 opencv-python==4.10.0.84
 mediapipe==0.10.14
+pycaw==20251023
+screen_brightness_control==0.27.2
+comtypes==1.4.16
+pywin32==312

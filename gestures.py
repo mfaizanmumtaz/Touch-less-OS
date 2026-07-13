@@ -59,6 +59,35 @@ def is_square_frame(landmarks_a, landmarks_b):
     return thumbs_touch and index_touch
 
 
+# Pinch (thumb-index) distance range, normalized by hand size, that maps to
+# 0%..100% for continuous control (volume/brightness). Tuned for a relaxed
+# pinch (fingers touching) up to a fully spread thumb/index.
+PINCH_MIN_RATIO = 0.15
+PINCH_MAX_RATIO = 1.3
+MIDDLE_MCP = 9
+
+
+def pinch_level(landmarks):
+    """Returns thumb-index pinch openness as a 0.0-1.0 float, normalized by
+    hand size so it is stable regardless of distance from the camera."""
+    hand_size = _dist(landmarks[WRIST], landmarks[MIDDLE_MCP])
+    if hand_size < 1e-6:
+        return None
+    pinch_ratio = _dist(landmarks[THUMB_TIP], landmarks[INDEX_TIP]) / hand_size
+    level = (pinch_ratio - PINCH_MIN_RATIO) / (PINCH_MAX_RATIO - PINCH_MIN_RATIO)
+    return max(0.0, min(1.0, level))
+
+
+def is_pinch_pose(landmarks):
+    """True when middle/ring/pinky are curled -- the hand shape used while
+    pinch-adjusting volume/brightness, so it doesn't fire during other
+    gestures that also happen to have thumb and index apart (e.g. peace)."""
+    middle_up = _finger_up(landmarks, MIDDLE_TIP, MIDDLE_PIP)
+    ring_up = _finger_up(landmarks, RING_TIP, RING_PIP)
+    pinky_up = _finger_up(landmarks, PINKY_TIP, PINKY_PIP)
+    return not middle_up and not ring_up and not pinky_up
+
+
 def classify_gesture(landmarks, handedness_label):
     """Returns one of: 'fist', 'open_palm', 'peace', 'thumbs_up', or None."""
     index_up = _finger_up(landmarks, INDEX_TIP, INDEX_PIP)
